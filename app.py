@@ -1,5 +1,6 @@
 import streamlit as st
 
+# Devsinc logo
 st.logo("logo.png")
 st.set_page_config(page_title="RAG Techniques")
 st.title("RAG Techniques")
