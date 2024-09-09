@@ -12,6 +12,7 @@ langchain-cohere
 faiss-cpu
 streamlit
 langchain-groq
+sentence-transformers
 langserve
 wikipedia
 langchainhub

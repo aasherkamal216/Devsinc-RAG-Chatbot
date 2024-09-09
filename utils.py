@@ -33,6 +33,7 @@ structured_llm_grader = llm.with_structured_output(GradeDocuments)
 
 # Prompt
 system = """You are a grader assessing relevance of a retrieved document to a user question.
+    It does not need to be a stringent test. The goal is to filter out erroneous retrievals.
     If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant.
     Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
 grade_prompt = ChatPromptTemplate.from_messages(
@@ -226,7 +227,6 @@ def web_search(state):
 
 
 ### Edges
-
 def decide_to_generate(state):
     """
     Determines whether to generate an answer, or re-generate a question.
@@ -368,3 +368,263 @@ def generate_answer(state):
     # Run
     response = rag_chain.invoke({"context": docs, "question": question})
     return {"messages": [response]}
+
+
+
+# Data model
+class GradeHallucinations(BaseModel):
+    """Binary score for hallucination present in generation answer."""
+
+    binary_score: str = Field(
+        description="Answer is grounded in the facts, 'yes' or 'no'"
+    )
+
+### --- Hallucination Checker --- ###
+llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+structured_hallucination_llm_grader = llm.with_structured_output(GradeHallucinations)
+
+# Prompt
+system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. 
+     Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+hallucination_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system),
+        ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
+    ]
+)
+hallucination_grader = hallucination_prompt | structured_hallucination_llm_grader
+
+
+
+# Data model
+class GradeAnswer(BaseModel):
+    """Binary score to assess answer addresses question."""
+
+    binary_score: str = Field(
+        description="Answer addresses the question, 'yes' or 'no'"
+    )
+
+### --- Answer Grader --- ###
+llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+structured_llm_answer_grader = llm.with_structured_output(GradeAnswer)
+
+# Prompt
+system = """You are a grader assessing whether an answer addresses / resolves a question
+     Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
+answer_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system),
+        ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
+    ]
+)
+answer_grader = answer_prompt | structured_llm_answer_grader
+
+
+### --- Question Rewriter for Retrieval--- ###
+retrieval_system_prompt = """You are a question re-writer that converts an input question to a better version that is optimized
+     for vectorstore retrieval. Look at the input and try to reason about the underlying semantic intent / meaning.
+     Formulate and provide an improved question. Don't say anything else."""
+re_write_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", retrieval_system_prompt),
+        ("human", "Here is the initial question: \n\n {question} \n "),
+    ]
+)
+
+q_rewriter_for_retrieval = re_write_prompt | ChatGroq(model="llama-3.1-8b-instant", temperature=0) | StrOutputParser()
+
+
+### --- Self-RAG Document Grader --- ###
+def sr_grade_documents(state):
+    """
+    Determines whether the retrieved documents are relevant to the question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): Updates documents key with only filtered relevant documents
+    """
+
+    print("###-----CHECK DOCUMENT RELEVANCE TO QUESTION----###")
+    question = state["question"]
+    documents = state["documents"]
+
+    # Score each doc
+    filtered_docs = []
+    for d in documents:
+        score = retrieval_grader.invoke(
+            {"question": question, "document": d.page_content}
+        )
+        grade = score.binary_score
+        if grade == "yes":
+            print("###-----GRADE: DOCS RELEVANT-----###")
+            filtered_docs.append(d)
+        else:
+            print("###-----GRADE: DOCS NOT RELEVANT-----###")
+            continue
+    return {"documents": filtered_docs, "question": question}
+
+
+###--- Self-RAG Query Transformation ---###
+def sr_transform_query(state):
+    """
+    Transform the query to produce a better question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): Updates question key with a re-phrased question
+    """
+
+    print("###---TRANSFORM QUERY---###")
+    question = state["question"]
+    documents = state["documents"]
+
+    # Re-write question
+    better_question = q_rewriter_for_retrieval.invoke({"question": question})
+    return {"documents": documents, "question": better_question}
+
+
+###--- Self-RAG Decision to Generate ---###
+def sr_decide_to_generate(state):
+    """
+    Determines whether to generate an answer, or re-generate a question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        str: Binary decision for next node to call
+    """
+
+    print("###---ASSESS GRADED DOCUMENTS---###")
+    filtered_documents = state["documents"]
+
+    if not filtered_documents:
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print(
+            "###---DECISION: ALL DOCUMENTS ARE NOT RELEVANT, TRANSFORM QUERY---###"
+        )
+        return "transform_query"
+    else:
+        # We have relevant documents, so generate answer
+        print("###---DECISION: GENERATE---###")
+        return "generate"
+
+
+def grade_generation_vs_documents_and_question(state):
+    """
+    Determines whether the generation is grounded in the document and answers question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        str: Decision for next node to call
+    """
+
+    print("###---CHECK HALLUCINATIONS---###")
+    question = state["question"]
+    documents = state["documents"]
+    generation = state["generation"]
+
+    score = hallucination_grader.invoke(
+        {"documents": documents, "generation": generation}
+    )
+    grade = score.binary_score
+
+    # Check hallucination
+    if grade == "yes":
+        print("###---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---###")
+        # Check question-answering
+        print("###---GRADE GENERATION vs QUESTION---###")
+        score = answer_grader.invoke({"question": question, "generation": generation})
+        grade = score.binary_score
+        if grade == "yes":
+            print("###---DECISION: GENERATION ADDRESSES QUESTION---###")
+            return "useful"
+        else:
+            print("###---DECISION: GENERATION DOES NOT ADDRESS QUESTION---###")
+            return "not useful"
+    else:
+        print("###---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---###")
+        return "not supported"
+
+
+
+# Data model
+class RouteQuery(BaseModel):
+    """Route a user query to the most relevant datasource."""
+
+    datasource: Literal["vectorstore", "web_search"] = Field(
+        ...,
+        description="Given a user question choose to route it to web search or a vectorstore.",
+    )
+
+###----Question Router ----###
+llm = ChatGroq(model="gemma2-9b-it", temperature=0)
+structured_llm_router = llm.with_structured_output(RouteQuery)
+
+# Prompt
+route_system_prompt = """You are an expert at routing a user question to a vectorstore or web search.
+The vectorstore contains documents related to 'Devsinc' tech company, its services, staff,
+blogs written on their website, terms and conditions, privacy policy and other relevant information.
+Use the vectorstore for questions on these topics. Otherwise, use web-search."""
+route_prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", route_system_prompt),
+        ("human", "{question}"),
+    ]
+)
+question_router = route_prompt | structured_llm_router
+
+
+###---- Adaptive-RAG Web Search ---###
+def ar_web_search(state):
+    """
+    Web search based on the re-phrased question.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): Updates documents key with appended web results
+    """
+
+    print("###---WEB SEARCH---###")
+    question = state["question"]
+
+    # Web search
+    docs = web_search_tool.invoke({"query": question})
+    web_results = "\n".join([d["content"] for d in docs])
+    web_results = Document(page_content=web_results)
+
+    return {"documents": web_results, "question": question}
+
+
+
+### ---Edges--- ###
+def route_question(state):
+    """
+    Route question to web search or RAG.
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        str: Next node to call
+    """
+
+    print("###----ROUTE QUESTION----###")
+    question = state["question"]
+    source = question_router.invoke({"question": question})
+
+    if source.datasource == "web_search":
+        print("###---ROUTE QUESTION TO WEB SEARCH---###")
+        return "web_search"
+    elif source.datasource == "vectorstore":
+        print("###---ROUTE QUESTION TO RAG---###")
+        return "vectorstore"
