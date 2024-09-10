@@ -54,7 +54,7 @@ if st.session_state.api_key and st.session_state.api_key.startswith("gsk"):
     os.environ["GROQ_API_KEY"] = st.session_state.api_key
 
     # Chat input
-    if question := st.chat_input("Write your message here"):
+    if question := st.chat_input("What is the Privacy Policy of Devsinc?"):
         st.session_state.messages.append({"role": "user", "content": question})
 
     # Displaying chat messages
