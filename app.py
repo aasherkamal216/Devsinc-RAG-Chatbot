@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from langchain_community.vectorstores import FAISS
-from langchain_cohere.embeddings import CohereEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # Devsinc logo
 st.logo("assets/logo.png")
@@ -21,8 +21,8 @@ st.markdown("""
 # Initialize session state variables
 if "vectorstore" not in st.session_state:
     with st.spinner(":green[Loading Vector Store. This may take a moment.]"):
-        embeddings = CohereEmbeddings(model="embed-english-v3.0", cohere_api_key=os.getenv("COHERE_API_KEY"))
-        st.session_state.vectorstore = FAISS.load_local("devsinc_faiss_index", embeddings=embeddings, allow_dangerous_deserialization=True)
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+        st.session_state.vectorstore = FAISS.load_local("devsinc_vectorstore", embeddings=embeddings, allow_dangerous_deserialization=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "How can I help you today?"}]
