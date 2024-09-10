@@ -8,12 +8,12 @@ from langchain_cohere.embeddings import CohereEmbeddings
 # Devsinc logo
 st.logo("assets/logo.png")
 
-st.set_page_config(page_title="RAG Techniques")
+st.set_page_config(page_title="RAG Techniques", layout="wide")
 
 ###--- Title ---###
 st.markdown("""
     <h1 style='text-align: center;'>
-        <span style='color: #16BBB2;'>Devsinc</span> 
+        <span style='color: #00EADE;'>Devsinc</span> 
         <span style='color: #ffffff;'>AI Assistant</span>
     </h1>
 """, unsafe_allow_html=True)

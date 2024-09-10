@@ -2,7 +2,11 @@ import streamlit as st
 from typing import List, Dict
 from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph, START
-from utils import contextualize_question, retrieve, grade_documents, generate, transform_query, web_search, decide_to_generate
+from utils.self_rag_utils import retrieve
+from utils.crag_utils import (contextualize_question,
+                              grade_documents,
+                              transform_query, web_search,
+                              decide_to_generate, generate)
 
 class GraphState(TypedDict):
     """
@@ -59,6 +63,7 @@ if st.session_state.messages[-1]["role"] == "user":
               "chat_history": st.session_state.messages[:-1]}
 
     with st.spinner("Thinking..."):
+        print("=========Corrective-RAG=========")
         for output in st.session_state.crag.stream(inputs):
             for key, value in output.items():
                 # Node

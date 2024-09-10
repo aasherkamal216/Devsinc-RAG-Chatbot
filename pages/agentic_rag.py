@@ -5,8 +5,8 @@ from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
-from utils import retrieve, rewrite, agent, retriever_tool, grade_document, generate_answer
-
+from utils.self_rag_utils import retrieve
+from utils.agent_rag_utils import rewrite, agent, grade_document, generate_answer, retriever_tool
 
 class AgentState(TypedDict):
     # The add_messages function defines how an update should be processed
@@ -61,6 +61,7 @@ if st.session_state.messages[-1]["role"] == "user":
 }
 
     with st.spinner("Thinking..."):
+        print("=========Agentic-RAG=========")
         for output in st.session_state.agentic_rag.stream(inputs):
             for key, value in output.items():
                 # Node
