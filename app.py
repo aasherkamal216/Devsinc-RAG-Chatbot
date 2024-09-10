@@ -6,7 +6,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
 
-# Devsinc logo
+# logo
 st.logo("assets/logo.png")
 
 st.set_page_config(page_title="RAG Techniques", layout="wide")
