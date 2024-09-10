@@ -5,16 +5,16 @@ This Streamlit application demonstrates various Retrieval-Augmented Generation (
 ## Features
 
 - Interactive chat interface with AI assistant
-- Multiple RAG techniques implemented:
+- Multiple RAG techniques and types implemented:
   - Naive RAG
-  - Multi-Query Perspective RAG
+  - Multi-Query Perspective
   - Hypothetical Document Embeddings (HyDE)
-  - Reranker RAG
+  - Reranker
   - Reciprocal Rank Fusion
-  - Self-RAG (placeholder)
-  - Corrective RAG (placeholder)
-  - Agentic RAG (placeholder)
-  - Adaptive RAG (placeholder)
+  - Self-RAG
+  - Corrective RAG
+  - Agentic RAG
+  - Adaptive RAG
 - LLM selection option
 - Vector store integration using FAISS
 
