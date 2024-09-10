@@ -9,6 +9,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.schema import Document
 from typing import Literal
 
+os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 
 ###----Question Router ----###
 # Data model
