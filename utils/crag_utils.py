@@ -10,6 +10,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.schema import Document
 
+os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
+
 ### --- Question Contextualizer --- ###
 contextualize_q_system_prompt = """Given a chat history and the latest user question 
     which might reference context in the chat history, formulate a standalone question 
