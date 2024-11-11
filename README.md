@@ -1,4 +1,4 @@
-# Devsinc AI Assistant: RAG Techniques Showcase
+# Devsinc RAG Chatbot
 
 This Streamlit application demonstrates various Retrieval-Augmented Generation (RAG) techniques using the Devsinc AI Assistant. It provides an interactive interface to explore different RAG methods and their applications in question-answering tasks.
 
@@ -20,31 +20,36 @@ This Streamlit application demonstrates various Retrieval-Augmented Generation (
 
 ## Getting Started
 
-1. Clone the repository:
+1. **Clone the repository:**
    ```
    git clone https://github.com/aasherkamal216/Devsinc-RAG-Chatbot.git
    cd Devsinc-RAG-Chatbot
    ```
-
-2. Install the required dependencies:
+2. **Set Up a Virtual Environment:**
+```
+python -m venv venv
+venv\Scripts\activate
+```
+3. **Install the required dependencies:**
    ```
    pip install -r requirements.txt
    ```
-3. Get your API key:
+4. **Get your API key:**
    - [Groq API key](https://console.groq.com/keys)
    - [Cohere API key](https://dashboard.cohere.com/api-keys)
    
-4. Set up environment variables:
+5. **Set up environment variables:**
    Create a `.env` file in the root directory and add the following:
    ```
    COHERE_API_KEY=your_cohere_api_key
    GROQ_API_KEY=your_groq_api_key
    ```
 
-## Running the App
+6. **Running the App**
 
 Run the Streamlit app:
 ```
 streamlit run app.py
 ```
+Your app should now be running at `http://localhost:8501`
 
