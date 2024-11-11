@@ -9,6 +9,9 @@ from langchain_huggingface import HuggingFaceEmbeddings
 # logo
 st.logo("assets/logo.png")
 
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
+
 st.set_page_config(page_title="RAG Techniques", layout="wide",
                    initial_sidebar_state="collapsed" if not st.session_state.api_key else "auto")
 
@@ -32,8 +35,6 @@ if "messages" not in st.session_state:
 if "llm" not in st.session_state:
     st.session_state.llm = "llama-3.1-8b-instant"
 
-if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
 
 # Function to reset chat
 def reset_chat():
