@@ -1,8 +1,11 @@
 # Devsinc RAG Chatbot
 
-This Streamlit application demonstrates various Retrieval-Augmented Generation (RAG) techniques using the Devsinc AI Assistant. It provides an interactive interface to explore different RAG methods and their applications in question-answering tasks.
+This Streamlit application demonstrates various Retrieval-Augmented Generation (RAG) techniques using the Devsinc AI Assistant.
+It provides an interactive interface to explore different RAG methods and their applications in question-answering tasks.
 
-## Features
+![Image](assets/devsinc.jpg)
+
+## ⚡Features
 
 - Interactive chat interface with AI assistant
 - Multiple RAG techniques and types implemented:
