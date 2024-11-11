@@ -9,7 +9,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 # logo
 st.logo("assets/logo.png")
 
-st.set_page_config(page_title="RAG Techniques", layout="wide")
+st.set_page_config(page_title="RAG Techniques", layout="wide", initial_sidebar_state="collapsed")
 
 ###--- Title ---###
 st.markdown("""
